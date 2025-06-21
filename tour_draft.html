@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Draft Board</title>
+    <style>
+        body {
+            background-image: url('your-image.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            min-height: calc(100vh - 1px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(27, 27, 31, 0.4);
+            z-index: -1;
+        }
+
+        #startButton {
+            padding: 30px 60px;
+            font-size: 32px;
+            background: linear-gradient(145deg, #1a1a1d 0%, #2d2d32 100%);
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5),
+                        inset 0 0 10px rgba(255, 215, 0, 0.2);
+            transition: all 0.3s ease;
+            margin: 0 auto 30px;
+        }
+
+        #startButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7),
+                        inset 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .team-names-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .subtle-input {
+            width: 400px;
+            padding: 12px 20px;
+            background: rgba(40, 40, 45, 0.7);
+            border: 1px solid #3a3a3f;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+
+        .subtle-input::placeholder {
+            color: #666;
+        }
+
+        .subtle-input:focus {
+            outline: none;
+            border-color: #55555a;
+            background: rgba(45, 45, 50, 0.8);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .step {
+            display: none;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .step.active {
+            overflow: auto;
+            max-height: calc(100vh - 160px);
+        }
+
+        .active {
+            display: block;
+        }
+        
+        #step1 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .step-header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .step-header h3 {
+            color: #FFD700;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+            padding: 10px 20px;
+            display: inline-block;
+            border-bottom: 2px solid #FFD700;
+            text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+        }
+
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px;
+            max-width: 600px;
+        }
+
+        .map-image {
+            width: 250px;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+
+        .map-image.banned {
+            filter: grayscale(80%) brightness(0.7);
+            border-color: #ff4444;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+        }
+
+        .map-image.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 25px rgba(76, 175, 80, 0.7);
+            filter: none;
+            animation: pulse-green 1.5s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(76, 175, 80, 0.9); }
+            100% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.5); }
+        }
+
+        .character-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(60px, 1fr)) !important;
+            max-width: 900px;
+        }
+
+        .character-icon {
+            width: 73%;
+            height: auto;
+            object-fit: contain !important;
+            border-radius: 6px;
+            margin: 0 !important;
+            transform: none !important;
+            aspect-ratio: unset !important;
+            padding: 2px !important;
+            box-sizing: border-box !important;
+        }
+
+        .character-icon.season-ban {
+            filter: brightness(0.5);
+            border-color: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+        }
+
+        .confirm-button {
+            padding: 12px 24px;
+            background-color: #2E2E32;
+            border: 2px solid #FFD700;
+            color: #FFD700;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .confirm-button:hover {
+            background-color: #3E3E42;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .draft-board {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            width: 98%;
+            height: calc(100vh - 180px);
+            padding: 0 1%;
+            margin: 0 auto;
+            gap: 2%;
+            box-sizing: border-box;
+        }
+
+        .team-panel {
+            width: 15%;
+            min-width: 220px;
+            background-color: #252529;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            position: relative;
+            align-items: center;
+            padding: 15px 10px;
+        }
+        
+        #team1Name, #team2Name {
+            font-size: 1.1em;
+            margin-bottom: 12px;
+            font-family: 'Roboto Condensed', Arial, sans-serif !important;
+            color: #FFD700 !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+            letter-spacing: 1px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            border-bottom: 2px solid #FFD700 !important;
+            padding-bottom: 4px !important;
+        }
+
+        #availableCharacters {
+            justify-items: center;
+            align-items: center;
+            flex: 1 1 54%;
+            min-width: 800px;
+            background: #252529;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(70px, 1fr)) !important;
+            gap: 5 !important;
+            row-gap: 5 !important;
+            margin: 0 !important;
+            overflow-y: auto;
+            height: 100%;
+            box-sizing: border-box;
+            border: 3px solid #8B7500 !important;
+            box-shadow: 0 0 15px rgba(139, 117, 0, 0.3) !important;
+            position: relative;
+            padding: 10px !important;
+        }
+
+        #team1Panel {
+            border: 4px solid #378a41;
+        }
+
+        #team2Panel {
+            border: 4px solid #a11b1b;
+        }
+        
+        .draft-board > * {
+            height: 100%;
+            max-height: 100%;
+        }
+
+        .pick-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .ban-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .ban-slots-container {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            overflow-x: visible !important;
+            gap: 12px;
+            width: max-content !important;
+            padding: 4px 6px;
+            margin: 0 auto;
+        }
+
+        .bans-label {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .slot {
+            background: #343438;
+            border-radius: 6px;
+            position: relative;
+            transition: all 0.3s;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pick-slot {
+            border-radius: 8px !important;
+            overflow: hidden;
+            width: 210px !important;
+            height: 95px !important;
+            transition: transform 0.2s;
+        }
+        
+        .pick-slot img {
+            border-radius: 6px !important;
+            transform: none;
+        }
+
+        .ban-slot {
+            width: 65px !important;
+            height: 65px !important;
+            border-radius: 8px;
+            flex-shrink: 0;
+            position: relative;
+            border: 2px solid rgba(255, 68, 68, 0.4) !important;
+        }
+        
+        .ban-slot img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid rgba(255, 68, 68, 0.4);
+        }
+        
+        .slot:hover img {
+            transform: scale(0.95);
+            z-index: 1;
+        }
+
+        /* Подсветка выбранного слота */
+        .active-slot img {
+            filter: drop-shadow(0 0 8px #ffa50080);
+        }
+
+        .slot-number {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            font-size: 12px;
+            color: #FFD700;
+            z-index: 1;
+        }
+
+        .slot.filled .slot-number {
+            display: none;
+        }
+
+        .active-slot {
+            box-shadow: 0 0 12px #FFA500;
+            background: #3E3E42;
+        }
+
+        .phase-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            white-space: nowrap;
+            z-index: 2;
+            border: 1px solid rgba(255, 215, 0, 0.6) !important;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.3) !important;
+            background: rgba(37, 37, 41, 0.95) !important;
+            backdrop-filter: blur(3px);
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            padding: 12px 24px !important;
+        }
+        
+        .phase-indicator::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .banned-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #2E2E32;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 60px;
+            border-top: 1px solid #404044;
+        }
+
+        .banned-content {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        #currentMap {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-left: auto;
+            padding-left: 20px;
+            border-left: 1px solid #404044;
+        }
+
+        .draft-complete {
+            background: linear-gradient(
+                45deg,
+                #1b1b1f,
+                #2a1b2f,
+                #1b1f2f,
+                #2a1b2f
+            );
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @media (max-width: 1400px) {
+            .team-panel {
+                min-width: 240px;
+            }
+            .ban-slot {
+                width: 70px !important;
+                height: 70px !important;
+            }
+        }
+		
+		#availableCharacters::-webkit-scrollbar {
+			width: 14px;
+			background-color: rgba(20, 20, 20, 0.8);
+			border-radius: 0 8px 8px 0;
+		}
+
+		#availableCharacters::-webkit-scrollbar-track {
+			background: rgba(15, 15, 15, 0.7);
+			border-radius: 0 8px 8px 0;
+			border-left: 2px solid #3a3a3f;
+		}
+
+		#availableCharacters::-webkit-scrollbar-thumb {
+			background: linear-gradient(145deg, #1a1a1d 0%, #2d2d32 100%);
+			border: 2px solid #FFD700;
+			border-radius: 6px;
+			box-shadow: inset 0 0 5px rgba(255, 215, 0, 0.3),
+						0 0 8px rgba(0, 0, 0, 0.5);
+		}
+
+		#availableCharacters::-webkit-scrollbar-thumb:hover {
+			background: linear-gradient(145deg, #252529 0%, #3d3d42 100%);
+			box-shadow: inset 0 0 8px rgba(255, 215, 0, 0.4),
+						0 0 10px rgba(0, 0, 0, 0.6);
+		}
+
+		#availableCharacters::-webkit-scrollbar-corner {
+			background: transparent;
+		}
+
+        /* Новые стили для шага мульти-пика */
+        .multi-pick-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .multi-pick-header {
+            text-align: center;
+            color: #FFD700;
+            margin-bottom: 15px;
+        }
+        
+        .multi-pick-info {
+            background: rgba(40, 40, 45, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+        
+        .multi-pick-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        
+        .multi-pick-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(50, 50, 55, 0.8);
+            border: 1px solid #3a3a3f;
+            border-radius: 6px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .multi-pick-toggle:hover {
+            background: rgba(60, 60, 65, 0.9);
+            border-color: #55555a;
+        }
+        
+        .multi-pick-toggle.selected {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4CAF50;
+        }
+        
+        .multi-pick-toggle img {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+        
+        .multi-pick-toggle span {
+            color: white;
+            font-size: 16px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="step" id="step1">
+        <div class="step-header">
+            <h3>Формирование команд</h3>
+        </div>
+        <button id="startButton">Начать драфт</button>
+        <div class="team-names-container">
+            <input type="text" id="team1" 
+                   placeholder="Название команды 1" 
+                   class="subtle-input">
+            <input type="text" id="team2" 
+                   placeholder="Название команды 2" 
+                   class="subtle-input">
+        </div>
+    </div>
+
+    <div class="step" id="step2">
+        <div class="step-header">
+            <h3>Бан карт</h3>
+        </div>
+        <div class="map-grid">
+            <img src="dungeon.jpg" class="map-image" data-map="Подземелье">
+            <img src="circus.jpg" class="map-image" data-map="Цирк">
+            <img src="sewer.jpg" class="map-image" data-map="Канализация">
+            <img src="factory.jpg" class="map-image" data-map="Завод">
+        </div>
+    </div>
+
+    <div class="step" id="seasonBans">
+        <div class="step-header">
+            <h3>Выберите баны сезона</h3>
+        </div>
+        <div class="character-selection-grid" id="seasonBansGrid"></div>
+        <button class="confirm-button" onclick="finalizeSeasonBans()">Подтвердить</button>
+    </div>
+
+    <!-- Новый шаг для выбора мульти-пик героев -->
+    <div class="step" id="multiPickStep">
+        <div class="step-header">
+            <h3>Мульти-пик герои</h3>
+        </div>
+        <div class="multi-pick-container">
+            <div class="multi-pick-info">
+                Выберите героев, которых можно выбирать несколько раз в одной команде.
+                По умолчанию все герои доступны только в одном экземпляре.
+            </div>
+            <div class="multi-pick-toggles" id="multiPickToggles"></div>
+            <button class="confirm-button" onclick="finalizeMultiPick()">Подтвердить выбор</button>
+        </div>
+    </div>
+
+    <div class="step" id="draftBoard">
+        <div class="phase-indicator" id="phaseIndicator"></div>
+        <div class="draft-board">
+            <div class="team-panel" id="team1Panel">
+                <h3 id="team1Name"></h3>
+                <div class="pick-slots">
+                    <div class="slot pick-slot" data-type="pick" data-index="0">
+                        <span class="slot-number">1</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="1">
+                        <span class="slot-number">2</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="2">
+                        <span class="slot-number">3</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="3">
+                        <span class="slot-number">4</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="4">
+                        <span class="slot-number">5</span>
+                    </div>
+                </div>
+                <div class="ban-slots">
+                    <div class="bans-label">БАНЫ</div>
+                    <div class="ban-slots-container">
+                        <div class="slot ban-slot" data-type="ban" data-index="0">
+                            <span class="slot-number">1</span>
+                        </div>
+                        <div class="slot ban-slot" data-type="ban" data-index="1">
+                            <span class="slot-number">2</span>
+                        </div>
+                        <div class="slot ban-slot" data-type="ban" data-index="2">
+                            <span class="slot-number">3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="availableCharacters"></div>
+            
+            <div class="team-panel" id="team2Panel">
+                <h3 id="team2Name"></h3>
+                <div class="pick-slots">
+                    <div class="slot pick-slot" data-type="pick" data-index="0">
+                        <span class="slot-number">1</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="1">
+                        <span class="slot-number">2</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="2">
+                        <span class="slot-number">3</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="3">
+                        <span class="slot-number">4</span>
+                    </div>
+                    <div class="slot pick-slot" data-type="pick" data-index="4">
+                        <span class="slot-number">5</span>
+                    </div>
+                </div>
+                <div class="ban-slots">
+                    <div class="bans-label">БАНЫ</div>
+                    <div class="ban-slots-container">
+                        <div class="slot ban-slot" data-type="ban" data-index="0">
+                            <span class="slot-number">1</span>
+                        </div>
+                        <div class="slot ban-slot" data-type="ban" data-index="1">
+                            <span class="slot-number">2</span>
+                        </div>
+                        <div class="slot ban-slot" data-type="ban" data-index="2">
+                            <span class="slot-number">3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="banned-area">
+            <div class="banned-content" id="bannedCharacters"></div>
+            <div id="currentMap">Карта: Не выбрана</div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        const steps = [
+            document.getElementById('step1'),     // Формирование команд
+            document.getElementById('step2'),     // Бан карт
+            document.getElementById('seasonBans'), // Бан сезона
+            document.getElementById('multiPickStep'), // Новый шаг мульти-пика
+            document.getElementById('draftBoard')  // Драфт
+        ];
+        const draftOrder = [
+            'team1-ban',
+            'team2-ban', 'team2-ban',
+            'team1-pick',
+            'team2-pick', 'team2-pick',
+            'team1-pick', 'team1-pick',
+            'team2-pick',
+            'team1-ban', 'team1-ban',
+            'team2-ban',
+            'team1-pick', 'team1-pick',
+            'team2-pick', 'team2-pick'
+        ];
+        let currentAction = 0;
+        let selectedMap = '';
+        const characters = [
+            'alise', 'angel', 'freddy', 'ghost', 'twinkle', 'raven',
+            'arni', 'cyklops', 'spark', 'molly', 'shenji', 'storm',
+            'bastion', 'berta', 'dragoon', 'kvon', 'leviaphan', 'ramsay',
+            'smog', 'blot', 'destroyer', 'lynx', 'mirage', 'fire',
+            'blizzard', 'doc', 'levi', 'satoshi', 'stalker', 'tess', 'vi', 'graviel'
+        ];
+        let bannedMaps = [];
+        let remainingMaps = 4;
+        let seasonBans = [];
+        let multiPickHeroes = []; // Новый массив для мульти-пик героев
+
+        // Инициализация карт
+        function initializeMaps() {
+            document.querySelectorAll('.map-image').forEach(img => {
+                img.addEventListener('click', function() {
+                    if (bannedMaps.length >= 3) return;
+                    
+                    if (!this.classList.contains('banned')) {
+                        this.classList.add('banned');
+                        bannedMaps.push(this.dataset.map);
+                        remainingMaps--;
+                        
+                        if (remainingMaps === 1) {
+                            const lastMap = document.querySelector('.map-image:not(.banned)');
+                            lastMap.classList.add('selected');
+                            
+                            setTimeout(() => {
+                                selectedMap = lastMap.dataset.map;
+                                document.getElementById('currentMap').textContent = `Карта: ${selectedMap}`;
+                                nextStep();
+                            }, 2000);
+                        }
+                    } else {
+                        this.classList.remove('banned');
+                        bannedMaps = bannedMaps.filter(m => m !== this.dataset.map);
+                        remainingMaps++;
+                    }
+                });
+            });
+        }
+
+        // Инициализация банов сезона
+        function initializeSeasonBans() {
+            const grid = document.getElementById('seasonBansGrid');
+            grid.innerHTML = '';
+            
+            characters.forEach(char => {
+                const img = document.createElement('img');
+                img.src = `${char}.jpg`;
+                img.className = 'character-icon';
+                img.dataset.character = char;
+                img.addEventListener('click', function() {
+                    this.classList.toggle('season-ban');
+                });
+                grid.appendChild(img);
+            });
+        }
+
+        function finalizeSeasonBans() {
+            seasonBans = Array.from(document.querySelectorAll('.season-ban'))
+                           .map(img => img.dataset.character);
+            
+            const bannedArea = document.getElementById('bannedCharacters');
+            document.querySelectorAll('.season-ban').forEach(icon => {
+                const clone = icon.cloneNode(true);
+                clone.style.width = '50px';
+                clone.style.height = '50px';
+                bannedArea.appendChild(clone);
+            });
+            
+            nextStep();
+        }
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            const team1 = document.getElementById('team1').value || 'Команда 1';
+            const team2 = document.getElementById('team2').value || 'Команда 2';
+            
+            document.getElementById('team1Name').textContent = team1;
+            document.getElementById('team2Name').textContent = team2;
+            
+            nextStep();
+        });
+
+        function showStep(stepIndex) {
+            steps.forEach(step => {
+                step.classList.remove('active');
+                step.style.display = 'none';
+            });
+            steps[stepIndex].classList.add('active');
+            steps[stepIndex].style.display = 'block';
+            
+            if (stepIndex === 1) {
+                initializeMaps();
+            }
+            if (stepIndex === 2) {
+                initializeSeasonBans();
+            }
+            if (stepIndex === 3) {
+                initializeMultiPick();
+            }
+        }
+
+        function nextStep() {
+            currentStep++;
+            if (currentStep >= steps.length) currentStep = steps.length - 1;
+            showStep(currentStep);
+        }
+
+        // Инициализация шага мульти-пика
+        function initializeMultiPick() {
+            const container = document.getElementById('multiPickToggles');
+            container.innerHTML = '';
+            
+            characters.forEach(char => {
+                const toggle = document.createElement('div');
+                toggle.className = 'multi-pick-toggle';
+                toggle.dataset.character = char;
+                
+                toggle.innerHTML = `
+                    <img src="${char}.jpg" alt="${char}">
+                    <span>${char}</span>
+                `;
+                
+                toggle.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                });
+                
+                container.appendChild(toggle);
+            });
+        }
+        
+        // Финализация выбора мульти-пика
+        function finalizeMultiPick() {
+            multiPickHeroes = Array.from(document.querySelectorAll('.multi-pick-toggle.selected'))
+                                .map(toggle => toggle.dataset.character);
+            
+            // Если ничего не выбрано, показываем сообщение
+            if (multiPickHeroes.length === 0) {
+                alert('Вы не выбрали ни одного героя для мульти-пика. Продолжаем с настройками по умолчанию.');
+            }
+            
+            setupDraftBoard();
+            nextStep();
+        }
+
+        function setupDraftBoard() {
+            const availableGrid = document.getElementById('availableCharacters');
+            availableGrid.innerHTML = '';
+            
+            characters
+                .filter(char => !seasonBans.includes(char))
+                .forEach(char => {
+                    const img = document.createElement('img');
+                    img.src = `${char}.jpg`;
+                    img.className = 'character-icon';
+                    img.dataset.character = char;
+                    availableGrid.appendChild(img);
+                });
+            
+            startDraft();
+        }
+
+        function updatePhaseIndicator() {
+            const phase = draftOrder[currentAction];
+            const [team, action] = phase.split('-');
+            const teamName = document.getElementById(`${team}Name`).textContent;
+            const actionMap = {ban: 'Бан', pick: 'Выбор'};
+            document.getElementById('phaseIndicator').textContent = 
+                `Сейчас выбирает: ${teamName} (${actionMap[action]})`;
+            
+            document.querySelectorAll('.slot').forEach(slot => slot.classList.remove('active-slot'));
+            const activePanel = document.getElementById(`${team}Panel`);
+            const slotType = action === 'ban' ? 'ban' : 'pick';
+            const slotIndex = getNextSlotIndex(team, slotType);
+            
+            if (slotIndex !== -1) {
+                const activeSlot = activePanel.querySelector(
+                    `.slot[data-type="${slotType}"][data-index="${slotIndex}"]`
+                );
+                if (activeSlot) activeSlot.classList.add('active-slot');
+            }
+        }
+
+        function getNextSlotIndex(team, type) {
+            const actions = draftOrder.slice(0, currentAction + 1)
+                .filter(a => a.startsWith(team) && a.endsWith(type));
+            return actions.length - 1;
+        }
+
+        function processSelection(target) {
+            const currentPhase = draftOrder[currentAction];
+            const [team, action] = currentPhase.split('-');
+            const slotIndex = getNextSlotIndex(team, action);
+            
+            const slot = document.getElementById(`${team}Panel`)
+                .querySelector(`.slot[data-type="${action}"][data-index="${slotIndex}"]`);
+
+            if (slot) {
+                const charName = target.dataset.character;
+                const clone = document.createElement('img');
+                
+                clone.src = action === 'pick' 
+                    ? `${charName}_v2.jpg`
+                    : `${charName}.jpg`;
+
+                // Стили для новых размеров
+                clone.style.width = '100%';
+                clone.style.height = '100%';
+                clone.style.objectFit = 'cover';
+                clone.style.borderRadius = '6px';
+
+                // Дополнительные эффекты для пиков
+                if (action === 'pick') {
+                    clone.style.transform = 'scale(0.97)';
+                    clone.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+                }
+
+                slot.innerHTML = '';
+                slot.appendChild(clone);
+                slot.classList.add('filled');
+                
+                // Удаляем героя из доступных только если:
+                // 1. Это не мульти-пик герой ИЛИ
+                // 2. Это бан (баны всегда удаляются)
+                if (action === 'ban' || !multiPickHeroes.includes(charName)) {
+                    target.remove();
+                }
+                
+                currentAction++;
+                if (currentAction >= draftOrder.length) finishDraft();
+                updatePhaseIndicator();
+            }
+        }
+
+        function finishDraft() {
+            document.body.classList.add('draft-complete');
+            document.getElementById('phaseIndicator').style.display = 'none';
+            document.querySelectorAll('.active-slot').forEach(slot => {
+                slot.classList.remove('active-slot');
+            });
+            document.getElementById('availableCharacters').replaceWith(
+                document.getElementById('availableCharacters').cloneNode(true)
+            );
+            alert('Драфт успешно завершен!');
+        }
+
+        function startDraft() {
+            updatePhaseIndicator();
+            document.getElementById('availableCharacters').addEventListener('click', e => {
+                if (e.target.classList.contains('character-icon')) {
+                    processSelection(e.target);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
